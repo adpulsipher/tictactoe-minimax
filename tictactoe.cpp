@@ -1,224 +1,263 @@
 /**
  * @file tictactoe.cpp
  * @author alex pulsipher
- * @brief 
- * 
- * A simple tictactoe game using simple console input output, functions, and some tricky 2D arrays!
- * Now with a fun unbeatable AI!
- * 
- * @version 2.0
- * @date 2026-02-24
- * 
- * @copyright Copyright (c) 2026
- * 
+ * @brief Unbeatable TicTacToe using Minimax
  */
 
 #include <iostream>
-#include <ctime>
-#include <cstdlib>
 #include <algorithm>
 
 using namespace std;
 
-//function prototypes
-bool selectTile (int tile, char board[3][3], int num);
-void printTiles (char board[3][3]);
-void playGame (int num, char board[3][3]);
-void initializeBoard (char board[3][3]);
-int checkWin (char board[3][3]);
-int miniMax (char board[3][3], bool isAIturn);
+// Function prototypes
+void printBoard(char board[3][3]);
+void initializeBoard(char board[3][3]);
+int checkWin(char board[3][3]);
+int miniMax(char board[3][3], bool isAIturn);
+void findBestMove(char board[3][3]);
+bool selectTile(int tile, char board[3][3]);
 
-int main () {
+int main() {
 
-    srand(time(NULL));
-    char again;
     char board[3][3];
+    char again;
 
     do {
-        //random number 0 or 1 to decide X or O
-        //int num = rand () % 2;
-        //cout << num << " is the random number between 0 and 1\n";
-        
-        //starts the game with 'O'
-        playGame (0, board);
-        cout << "Play again? Enter y/n\n";
+
+        initializeBoard(board);
+        printBoard(board);
+
+        int gameState = 2; // 2 = ongoing
+
+        while (gameState == 2) {
+
+            // -------------------
+            // HUMAN TURN (X)
+            // -------------------
+            int userChoice;
+            bool valid;
+
+            cout << "Your move (X). Choose 1-9: ";
+
+            do {
+                cin >> userChoice;
+                valid = selectTile(userChoice, board);
+            } while (!valid);
+
+            int row = (userChoice - 1) / 3;
+            int col = (userChoice - 1) % 3;
+            board[row][col] = 'X';
+
+            printBoard(board);
+            gameState = checkWin(board);
+            if (gameState != 2) break;
+
+            // -------------------
+            // AI TURN (O)
+            // -------------------
+            cout << "AI is thinking...\n";
+            findBestMove(board);
+
+            printBoard(board);
+            gameState = checkWin(board);
+        }
+
+        // Game result
+        if (gameState == 1)
+            cout << "AI (O) wins!\n";
+        else if (gameState == -1)
+            cout << "You (X) win!\n";
+        else
+            cout << "Cat's game (Draw).\n";
+
+        cout << "Play again? (y/n): ";
         cin >> again;
 
     } while (again == 'y' || again == 'Y');
 
-
     return 0;
 }
 
-void playGame (int num, char board[3][3]) {
-
-    int userTile = num;
-
-    initializeBoard(board);
-    printTiles(board);
-
-    int gameOver = {};
-    do {
-
-        int userSelection = {};
-        char tileChar = ' ';
-
-        //if num is 0 it starts with O, otherwise starts with X
-        if (userTile == 0) {
-            tileChar = 'O';
-        } else tileChar = 'X';
-
-        cout << "Which tile will you select? Enter the number (1-9; left to right, up to down): ";
-        bool validMove;
-        do {
-            
-            cin >> userSelection;
-            validMove = selectTile(userSelection, board, userTile);
-
-        } while (!validMove);
-
-        int row = (userSelection - 1) / 3;
-        int col = (userSelection - 1) % 3;
-        board[row][col] = tileChar;
-
-        gameOver = checkWin(board);
-        printTiles(board);
-
-        userTile = 1 - userTile;
-        
-
-    } while (gameOver == 0);
-    char tileChar = ' ';
-    if (userTile == 1) {
-        tileChar = 'O';
-    } else {
-        tileChar = 'X';
-    }
-    if (gameOver == 1) {
-        cout << tileChar << "'s have won the game!\n";
-    } else if (gameOver == 2) {
-        cout << "Cat's game, bummer. Better luck next time\n";
-    }
-}
-
-bool selectTile(int tile, char board[3][3], int num) {
-
-int row = (tile - 1) / 3;
-int col = (tile - 1) % 3;
-
-    if (board[row][col] == '-') {
-        return true;
-    } else {
-        cout << "This space is occupied. Enter another number (1-9; left to right, top to bottom): ";
-        return false;
-    }
-}
-
-void printTiles(char board[3][3]) {
-    
-    cout << string(50, '\n');
-
-    for (int row = {}; row < 3; row++) {
-        cout << ((row * 3) + 1) << " > ";
-        for (int col = {}; col < 3; col++) {
-            cout << board[row][col];
-        }
-        cout << endl;
-    }
-
-    cout << string(3, '\n');
-}
+// -------------------------------------------
 
 void initializeBoard(char board[3][3]) {
 
-    for (int row = {}; row < 3; row++) {
-        for (int col = {}; col < 3; col++) {
-            board[row][col] = '-';
-        }
-    }
+    for (int r = 0; r < 3; r++)
+        for (int c = 0; c < 3; c++)
+            board[r][c] = '-';
 }
+
+// -------------------------------------------
+
+void printBoard(char board[3][3]) {
+
+    cout << "\n";
+
+    for (int r = 0; r < 3; r++) {
+        for (int c = 0; c < 3; c++)
+            cout << board[r][c] << " ";
+        cout << endl;
+    }
+
+    cout << "\n";
+}
+
+// -------------------------------------------
+
+bool selectTile(int tile, char board[3][3]) {
+
+    if (tile < 1 || tile > 9) {
+        cout << "Invalid tile. Choose 1-9: ";
+        return false;
+    }
+
+    int row = (tile - 1) / 3;
+    int col = (tile - 1) % 3;
+
+    if (board[row][col] == '-') {
+        return true;
+    }
+
+    cout << "Spot taken. Choose again: ";
+    return false;
+}
+
+// -------------------------------------------
+// checkWin return values:
+//  1  = O wins
+// -1  = X wins
+//  0  = draw
+//  2  = game ongoing
+// -------------------------------------------
 
 int checkWin(char board[3][3]) {
 
-for (int row = 0; row < 3; row++) {
-    if (board[row][0] == board[row][1]
-        && board[row][1] == board[row][2]
-        && board[row][2] != '-') 
-    {
-        if (board[row][0] == 'O') {
-            return 1; 
-        } else return -1;
-    }
-}
-for (int col = 0; col < 3; col++) {
-    if (board[0][col] == board[1][col]
-        && board[1][col] == board[2][col]
-        && board[2][col] != '-') 
-    {
-        if (board[0][col] == 'O') {
-            return 1; 
-        } else return -1;
-    }
-}
-if (board[0][0] == board[1][1]
-    && board[1][1] == board[2][2]
-    && board[2][2] != '-') 
-    {
-        if (board[0][0] == 'O') {
-            return 1; 
-        } else return -1;
-    }
-if (board[0][2] == board[1][1]
-    && board[1][1] == board[2][0]
-    && board[2][0] != '-') 
-    {
-        if (board[0][2] == 'O') {
-            return 1; 
-        } else return -1;
-    }
-//check for cat's game, if it finds no -, and all win possibilities have been checked, must be a cat's game, therefore return 0 (a draw for minimax alogrithm)
-for (int row = 0; row < 3; row++) {
-    for (int col = 0; col < 3; col++) {
-        if (board[row][col] == '-') {
-            return 2;
+    // Rows
+    for (int r = 0; r < 3; r++) {
+        if (board[r][0] == board[r][1] &&
+            board[r][1] == board[r][2] &&
+            board[r][0] != '-') {
+
+            return (board[r][0] == 'O') ? 1 : -1;
         }
     }
+
+    // Columns
+    for (int c = 0; c < 3; c++) {
+        if (board[0][c] == board[1][c] &&
+            board[1][c] == board[2][c] &&
+            board[0][c] != '-') {
+
+            return (board[0][c] == 'O') ? 1 : -1;
+        }
+    }
+
+    // Diagonals
+    if (board[0][0] == board[1][1] &&
+        board[1][1] == board[2][2] &&
+        board[0][0] != '-') {
+
+        return (board[0][0] == 'O') ? 1 : -1;
+    }
+
+    if (board[0][2] == board[1][1] &&
+        board[1][1] == board[2][0] &&
+        board[0][2] != '-') {
+
+        return (board[0][2] == 'O') ? 1 : -1;
+    }
+
+    // Check for empty spaces
+    for (int r = 0; r < 3; r++)
+        for (int c = 0; c < 3; c++)
+            if (board[r][c] == '-')
+                return 2;
+
+    return 0; // draw
 }
-return 0;
-}
-int miniMax (char board[3][3], bool isAIturn) {
+
+// -------------------------------------------
+
+int miniMax(char board[3][3], bool isAIturn) {
 
     int result = checkWin(board);
 
-    if (result != 2)  // game over
+    if (result != 2)
         return result;
 
     if (isAIturn) {
+
         int bestScore = -10000;
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 3; col++) {
-                if (board[row][col] == '-') {
-                    board[row][col] = 'O';
+
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 3; c++) {
+
+                if (board[r][c] == '-') {
+
+                    board[r][c] = 'O';
+
                     int score = miniMax(board, false);
-                    board[row][col] = '-';
+
+                    board[r][c] = '-';
+
                     bestScore = max(bestScore, score);
                 }
             }
         }
+
         return bestScore;
-    } else
-    {
+    }
+    else {
+
         int bestScore = 10000;
-        for (int row = 0; row < 3; row++) {
-            for (int col = 0; col < 3; col++) {
-                if (board[row][col] == '-') {
-                    board[row][col] = 'X';
+
+        for (int r = 0; r < 3; r++) {
+            for (int c = 0; c < 3; c++) {
+
+                if (board[r][c] == '-') {
+
+                    board[r][c] = 'X';
+
                     int score = miniMax(board, true);
-                    board[row][col] = '-';
+
+                    board[r][c] = '-';
+
                     bestScore = min(bestScore, score);
                 }
             }
         }
+
         return bestScore;
     }
+}
+
+// -------------------------------------------
+
+void findBestMove(char board[3][3]) {
+
+    int bestScore = -10000;
+    int bestRow = -1;
+    int bestCol = -1;
+
+    for (int r = 0; r < 3; r++) {
+        for (int c = 0; c < 3; c++) {
+
+            if (board[r][c] == '-') {
+
+                board[r][c] = 'O';
+
+                int score = miniMax(board, false);
+
+                board[r][c] = '-';
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestRow = r;
+                    bestCol = c;
+                }
+            }
+        }
+    }
+
+    board[bestRow][bestCol] = 'O';
 }
