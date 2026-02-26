@@ -16,6 +16,7 @@
 #include <iostream>
 #include <ctime>
 #include <cstdlib>
+#include <algorithm>
 
 using namespace std;
 
@@ -25,6 +26,7 @@ void printTiles (char board[3][3]);
 void playGame (int num, char board[3][3]);
 void initializeBoard (char board[3][3]);
 int checkWin (char board[3][3]);
+int miniMax (char board[3][3], bool isAIturn);
 
 int main () {
 
@@ -34,11 +36,11 @@ int main () {
 
     do {
         //random number 0 or 1 to decide X or O
-        int num = rand () % 2;
+        //int num = rand () % 2;
         //cout << num << " is the random number between 0 and 1\n";
         
-        //starts the game using the 0 or 1 as parameter for X or O
-        playGame (num, board);
+        //starts the game with 'O'
+        playGame (0, board);
         cout << "Play again? Enter y/n\n";
         cin >> again;
 
@@ -61,7 +63,7 @@ void playGame (int num, char board[3][3]) {
         int userSelection = {};
         char tileChar = ' ';
 
-        //if random num is 0 it starts with O, otherwise starts with X (should be 50/50)
+        //if num is 0 it starts with O, otherwise starts with X
         if (userTile == 0) {
             tileChar = 'O';
         } else tileChar = 'X';
@@ -143,7 +145,9 @@ for (int row = 0; row < 3; row++) {
         && board[row][1] == board[row][2]
         && board[row][2] != '-') 
     {
-        return 1;
+        if (board[row][0] == 'O') {
+            return 1; 
+        } else return -1;
     }
 }
 for (int col = 0; col < 3; col++) {
@@ -151,28 +155,70 @@ for (int col = 0; col < 3; col++) {
         && board[1][col] == board[2][col]
         && board[2][col] != '-') 
     {
-        return 1;
+        if (board[0][col] == 'O') {
+            return 1; 
+        } else return -1;
     }
 }
 if (board[0][0] == board[1][1]
     && board[1][1] == board[2][2]
     && board[2][2] != '-') 
     {
-        return 1;
+        if (board[0][0] == 'O') {
+            return 1; 
+        } else return -1;
     }
 if (board[0][2] == board[1][1]
     && board[1][1] == board[2][0]
     && board[2][0] != '-') 
     {
-        return 1;
+        if (board[0][2] == 'O') {
+            return 1; 
+        } else return -1;
     }
-//check for cat's game, if it finds no -, and all win possibilities have been checked, must be a cat's game, therefore return 2
+//check for cat's game, if it finds no -, and all win possibilities have been checked, must be a cat's game, therefore return 0 (a draw for minimax alogrithm)
 for (int row = 0; row < 3; row++) {
     for (int col = 0; col < 3; col++) {
         if (board[row][col] == '-') {
-            return 0;
+            return 2;
         }
     }
 }
-return 2;
+return 0;
+}
+int miniMax (char board[3][3], bool isAIturn) {
+
+    int result = checkWin(board);
+
+    if (result != 2)  // game over
+        return result;
+
+    if (isAIturn) {
+        int bestScore = -10000;
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                if (board[row][col] == '-') {
+                    board[row][col] = 'O';
+                    int score = miniMax(board, false);
+                    board[row][col] = '-';
+                    bestScore = max(bestScore, score);
+                }
+            }
+        }
+        return bestScore;
+    } else
+    {
+        int bestScore = 10000;
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                if (board[row][col] == '-') {
+                    board[row][col] = 'X';
+                    int score = miniMax(board, true);
+                    board[row][col] = '-';
+                    bestScore = min(bestScore, score);
+                }
+            }
+        }
+        return bestScore;
+    }
 }
